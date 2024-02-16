@@ -13,13 +13,13 @@ type ReservationError record {|
 sendsms:Client smsClient = check new ();
 sendemail:Client emailClient = check new ();
 
-service /reservations on new http:Listener(9090) {
+service / on new http:Listener(9090) {
 
-    resource function get roomTypes(string checkinDate, string checkoutDate, int guestCapacity) returns RoomType[]|error {
+    resource function get reservations/roomTypes(string checkinDate, string checkoutDate, int guestCapacity) returns RoomType[]|error {
         return getAvailableRoomTypes(checkinDate, checkoutDate, guestCapacity);
     }
 
-    resource function post .(ReservationRequest reservationRequest) returns Reservation|ReservationError|error {
+    resource function post reservations(ReservationRequest reservationRequest) returns Reservation|ReservationError|error {
         Room? room = check getAvailableRoom(reservationRequest.checkinDate, reservationRequest.checkoutDate, reservationRequest.roomType);
         if (room is ()) {
             return {body: "No rooms available for the given dates"};
@@ -38,7 +38,7 @@ service /reservations on new http:Listener(9090) {
 
     }
 
-    resource function put [int reservation_id](UpdateReservationRequest payload) returns Reservation|ReservationError|error {
+    resource function put reservations/[int reservation_id](UpdateReservationRequest payload) returns Reservation|ReservationError|error {
         Reservation? reservation = roomReservations[reservation_id];
         if (reservation is ()) {
             return {body: "Reservation not found"};
@@ -54,7 +54,7 @@ service /reservations on new http:Listener(9090) {
         return reservation;
     }
 
-    resource function delete [int reservation_id]() returns http:Ok|ReservationError {
+    resource function delete reservations/[int reservation_id]() returns http:Ok|ReservationError {
         if (roomReservations.hasKey(reservation_id)) {
             _ = roomReservations.remove(reservation_id);
             return http:OK;
@@ -64,7 +64,7 @@ service /reservations on new http:Listener(9090) {
         }
     }
 
-    resource function get users/[string userId]() returns Reservation[] {
+    resource function get reservations/users/[string userId]() returns Reservation[] {
         return from Reservation r in roomReservations
             where r.user.id == userId
             select r;
